@@ -8,7 +8,7 @@ if [[ $# -lt 18 ]] && [[ $# -ne 0 ]] ; then
   echo
   echo "You have not passed all the required 9 parameters or one of the parameter is missing a value"
   echo
-  exit 0
+  exit 1
 fi
 
 if [[ $# -gt 18 ]] ; then
@@ -16,7 +16,7 @@ if [[ $# -gt 18 ]] ; then
   echo "You have not passed all the required 9 parameters or one of the parameter is missing a value"
   echo "Please make sure that all of these parameters have a value -source_adminuser  -target_adminuser  -source_art  -target_art  -source_repo  -target_repo  -source_password  -target_password  -download_missingfiles"
   echo
-  exit 0
+  exit 1
 fi
 
 if [[ $# -ne 0 ]] ; then
@@ -70,7 +70,7 @@ if [[ $# -ne 0 ]] ; then
       *)
         echo 
         echo "$1 is not a recognized flag!"
-        exit 0 
+        exit 1 
         # return 1;
         ;;
     esac
@@ -89,35 +89,35 @@ if [[ $# -ne 0 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the provided username (-source_adminuser) and password (-source_password) for the Source Artifactory" 
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 000 ]] ; then
     echo
     echo "Request failed with Could not resolve host: ${source_art} Please check the Source Artifactory URL (-source_art) and make sure its correct"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 404 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL (-source_art) and Source Repository (-source_repo) make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 400 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL (-source_art) and Source Repository (-source_repo) make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -ne 200 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL (-source_art) and Source Repository (-source_repo) make sure its correct."
     echo
-    exit 0
+    exit 1
   fi
   
   status_code=$(curl --user "${target_adminuser}:${target_password}" --write-out %{http_code} --silent --output /dev/null "${target_art}/api/storage/${target_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location)
@@ -126,35 +126,35 @@ if [[ $# -ne 0 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the provided username (-target_adminuser) and password (-target_password) for the Target Artifactory"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 000 ]] ; then
     echo
     echo "Request failed with Could not resolve host: ${target_art} Please check the Target Artifactory URL (-target_art) and make sure its correct"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 404 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL (-target_art) and Target Repository (-target_repo) make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 400 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL (-target_art) and Target Repository (-target_repo) make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -ne 200 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL (-target_art) and Target Repository (-target_repo) make sure its correct."
     echo
-    exit 0
+    exit 1
   fi
   
   curl --request GET --user "${source_adminuser}:${source_password}" "${source_art}/api/storage/${source_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location > source.log
@@ -212,35 +212,35 @@ if [[ $# -eq 0 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the provided admin username and password for the Source Artifactory"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 000 ]] ; then
     echo
     echo "Request failed with Could not resolve host: ${source_art}. Please check the Source Artifactory URL and make sure its correct"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 404 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL and Source Repository name provided make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 400 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL and Source Repository name provided make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -ne 200 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Source Artifactory URL and Source Repository name provided make sure its correct."
     echo
-    exit 0
+    exit 1
   fi
   
   status_code=$(curl --user "${target_adminuser}:${target_password}" --write-out %{http_code} --silent --output /dev/null "${target_art}/api/storage/${target_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location)
@@ -249,35 +249,35 @@ if [[ $# -eq 0 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the provided admin username and password for the Target Artifactory"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 000 ]] ; then
     echo
     echo "Request failed with Could not resolve host: ${target_art} Please check the Target Artifactory URL and make sure its correct"
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 404 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL and Target Repository name provided make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -eq 400 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL and Target Repository name provided make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   if [[ "${status_code}" -ne 200 ]] ; then
     echo
     echo "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL and Target Repository name provided make sure its correct. "
     echo
-    exit 0
+    exit 1
   fi
   
   curl --request GET --user "${source_adminuser}:${source_password}" "${source_art}/api/storage/${source_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location > source.log
