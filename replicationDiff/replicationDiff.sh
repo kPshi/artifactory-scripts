@@ -36,37 +36,37 @@ while test $# -gt 0; do
                     TARGETUSER=$1
                     shift
                     ;;
-                     -source_art)
+                -source_art)
                     shift
                     SOURCEART=$1
                     shift
                     ;;
-                     -target_art)
+                -target_art)
                     shift
                     TARGETART=$1
                     shift
                     ;;
-                     -source_repo)
+                -source_repo)
                     shift
                     SOURCEREPO=$1
                     shift
                     ;;
-                     -target_repo)
+                -target_repo)
                     shift
                     TARGETREPO=$1
                     shift
                     ;;
-                     -source_password)
+                -source_password)
                     shift
                     SOURCEPASSWORD=$1
                     shift
                     ;;
-                    -target_password)
+                -target_password)
                     shift
                     TARGETPASSWORD=$1
                     shift
                     ;;
-                    -download_missingfiles)
+                -download_missingfiles)
                     shift
                     DOWNLOADMISSINGFILES=$1
                     shift
