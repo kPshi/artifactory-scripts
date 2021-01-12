@@ -4,8 +4,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-if [[ $# -lt 18 ]] && [[ $# -ne 0 ]]
-then
+if [[ $# -lt 18 ]] && [[ $# -ne 0 ]] ; then
 echo
 echo "You have not passed all the required 9 parameters or one of the parameter is missing a value"
 echo "Please make sure that all of these parameters have a value -source_adminuser  -target_adminuser  -source_art  -target_art  -source_repo  -target_repo  -source_password  -target_password  -download_missingfiles"
@@ -13,8 +12,7 @@ echo
 exit 0
 fi
 
-if [[ $# -gt 18 ]]
-then
+if [[ $# -gt 18 ]] ; then
 echo
 echo "You have not passed all the required 9 parameters or one of the parameter is missing a value"
 echo "Please make sure that all of these parameters have a value -source_adminuser  -target_adminuser  -source_art  -target_art  -source_repo  -target_repo  -source_password  -target_password  -download_missingfiles"
@@ -22,8 +20,7 @@ echo
 exit 0
 fi
 
-if [[ $# -ne 0 ]]  
-then    
+if [[ $# -ne 0 ]] ; then
 while test $# -gt 0; do
            case "$1" in
                 -source_adminuser)
@@ -190,22 +187,19 @@ sed '/maven-metadata.xml/d' filepaths_uri.txt |  sed '/Packages.bz2/d' | sed '/.
 rm source.log target.log diff_output.txt cleanpaths.txt
 echo
 
-if [[ $DOWNLOADMISSINGFILES =~ [yY](es)* ]]
-then
+if [[ $DOWNLOADMISSINGFILES =~ [yY](es)* ]] ; then
 mkdir replication_downloads
 cd replication_downloads
 cat ../filepaths_nometadatafiles.txt | xargs -n 1 curl -sS -L -O -u$SOURCEUSER:$SOURCEPASSWORD
 echo "Downloading all the files that are present in Source repository and missing from the Target repository to a folder '"replication_downloads"' in the current working directory"
 fi
-if [[ $DOWNLOADMISSINGFILES =~ [nN](o)* ]]
-then
+if [[ $DOWNLOADMISSINGFILES =~ [nN](o)* ]] ; then
 exit 0
 fi
 exit 0
 fi
 
-if [[ $# -eq 0 ]]
-then
+if [[ $# -eq 0 ]] ; then
 echo "Enter your source Artifactory URL: "
 read Source_ART_URL
 SOURCE_ART=${Source_ART_URL%/}
@@ -327,12 +321,10 @@ echo
 echo
 echo "Do you want to download all the files that are present in Source repository and missing from the Target repository?(yes/no)"
 read input
-if [[ $input =~ [yY](es)* ]]
-then
+if [[ $input =~ [yY](es)* ]] ; then
 echo "Downloading the missing files to a folder '"replication_downloads"' in the current working directory"
 fi
-if [[ $input =~ [nN](o)* ]]
-then
+if [[ $input =~ [nN](o)* ]] ; then
 echo "done"
 exit 0
 fi
