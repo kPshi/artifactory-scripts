@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -o errexit
+set -o pipefail
+set -o nounset
+
 if [[ $# -lt 18 ]] && [[ $# -ne 0 ]]
 then
 echo
