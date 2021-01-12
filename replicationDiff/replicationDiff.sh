@@ -64,7 +64,7 @@ while test $# -gt 0; do
                     ;;
                     -download_missingfiles)
                     shift
-                    DOWNLOADFILES=$1
+                    DOWNLOADMISSINGFILES=$1
                     shift
                     ;;
 
@@ -186,14 +186,14 @@ sed '/maven-metadata.xml/d' filepaths_uri.txt |  sed '/Packages.bz2/d' | sed '/.
 rm source.log target.log diff_output.txt cleanpaths.txt
 echo
 
-if [[ $DOWNLOADFILES =~ [yY](es)* ]]
+if [[ $DOWNLOADMISSINGFILES =~ [yY](es)* ]]
 then
 mkdir replication_downloads
 cd replication_downloads
 cat ../filepaths_nometadatafiles.txt | xargs -n 1 curl -sS -L -O -u$SOURCEUSER:$SOURCEPASSWORD
 echo "Downloading all the files that are present in Source repository and missing from the Target repository to a folder '"replication_downloads"' in the current working directory"
 fi
-if [[ $DOWNLOADFILES =~ [nN](o)* ]]
+if [[ $DOWNLOADMISSINGFILES =~ [nN](o)* ]]
 then
 exit 0
 fi
