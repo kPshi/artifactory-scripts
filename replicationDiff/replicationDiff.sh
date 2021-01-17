@@ -4,6 +4,23 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+stackdump() {
+  local err=$?
+  set +o xtrace
+  local code="${1:-1}"
+  echo 1>&2 "Error in ${PPID}->$$: ${BASH_SOURCE[1]}:${BASH_LINENO[0]}. '${BASH_COMMAND}', \$PWD: $PWD exited with status $err"
+
+  if [ ${#FUNCNAME[@]} -gt 2 ]
+  then
+    echo 1>&2 "Call tree:"
+    for ((i=1;i<${#FUNCNAME[@]}-1;i++))
+    do
+      echo 1>&2 " $i: ${BASH_SOURCE[$i+1]}:${BASH_LINENO[$i]} ${FUNCNAME[$i]}(...)"
+    done
+  fi
+}
+trap stackdump ERR
+
 die() {
   echo
   [ "${*:-}" ] && cat <<<"$*" || cat
