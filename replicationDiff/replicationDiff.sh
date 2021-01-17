@@ -53,7 +53,7 @@ args="$(getopt \
           --name "$(basename "$0")" \
           --alternative \
           --options 'h' \
-          --longoptions source_adminuser:,target_adminuser:,source_art:,target_art:,source_repo:,target_repo:,source_password:,target_password:,download_missingfiles:,help \
+          --longoptions source_adminuser:,target_adminuser:,source_art:,target_art:,source_repo:,target_repo:,source_password:,target_password:,download_missingfiles::,count_extensions::,show_missing::,fail_on_missing::,help \
           -- \
           "$@"
       )"
@@ -94,7 +94,35 @@ while [ "$1" != -- ] ; do
       shift
       ;;
     --download_missingfiles)
-      download_missingfiles=$2
+      if [[ "${2,,:-yes}" =~ ^y(es)?$ ]] ; then
+        download_missingfiles=1
+      else
+        unset download_missingfiles
+      fi
+      shift
+      ;;
+    --count_extensions)
+      if [[ "${2,,:-yes}" =~ ^y(es)?$ ]] ; then
+        count_extensions=1
+      else
+        unset count_extensions
+      fi
+      shift
+      ;;
+    --show_missing)
+      if [[ "${2,,:-yes}" =~ ^y(es)?$ ]] ; then
+        show_missing=1
+      else
+        unset show_missing
+      fi
+      shift
+      ;;
+    --fail_on_missing)
+      if [[ "${2,,:-yes}" =~ ^y(es)?$ ]] ; then
+        fail_on_missing=1
+      else
+        unset fail_on_missing
+      fi
       shift
       ;;
     --help|-h)
@@ -124,7 +152,10 @@ Where options are
   --target_art <url>              base URL of the target artifactory
   --target_repo <name>            which target repo to compare
   --target_password <password>    password fpr the target Artifactory
-  --download_missingfiles=[yn]    download files missing in the target repository
+  --download_missingfiles[=<yn>]  download files missing in the target repository
+  --count_extensions[=<yn>]i      count grouped by file extension
+  --show_missing[=<yn>]           show missing files
+  --fail_on_missing[=<yn>]        fail with exit code if some files are missing
   --help|-h                       show this help
 END
 fi
@@ -173,34 +204,84 @@ source_art="${source_art%/}"
 target_art="${target_art%/}"
 
 
-trap 'rm source.list target.list diff_output.txt cleanpaths.txt' EXIT
+tempdir="$(mktemp --directory)"
+trap 'rm -rf -- "${tempdir}"' EXIT
+cd "${tempdir}"
 
-status_code="$(curl --request GET --user "${source_adminuser}:${source_password}" "${source_art}/api/storage/${source_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location --output source.list --write-out %{http_code} --silent 2>/dev/null ||:)"
+status_code="$(curl --request GET --user "${source_adminuser}:${source_password}" "${source_art}/api/storage/${source_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location --output source.json --write-out %{http_code} --silent 2>/dev/null ||:)"
 handle_http_status "${status_code}" source
 
-status_code="$(curl --request GET --user "${target_adminuser}:${target_password}" "${target_art}/api/storage/${target_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location --output target.list --write-out %{http_code} --silent 2>/dev/null ||:)"
+status_code="$(curl --request GET --user "${target_adminuser}:${target_password}" "${target_art}/api/storage/${target_repo}/?list&deep=1&listFolders=0&mdTimestamps=1&statsTimestamps=1&includeRootPath=1" --location --output target.json --write-out %{http_code} --silent 2>/dev/null ||:)"
 handle_http_status "${status_code}" target
 
-diff --new-line-format="" --unchanged-line-format="" source.list target.list > diff_output.txt
-grep uri diff_output.txt | sed 's/[<>,]//g; /https/d; /http/d; s/ //g; s/[",]//g; s/uri://g' > cleanpaths.txt
-awk -v prefix="${source_art}/${source_repo}" '{print prefix $0}' cleanpaths.txt > filepaths_uri.txt
+for json in source.json target.json ; do
+  declare -i count
+  count="$(jq '.files | length' "${json}")"
+  for (( i=0 ; $i < $count ; i+=1 )) ; do
+    jq -r '.files['$i'].sha2 + " " + .files['$i'].uri' "${json}"
+  done | grep -v '^ */$' | sed '
+    /maven-metadata.xml/d;
+    /Packages.bz2/d;
+    /.*gemspec.rz$/d;
+    /Packages.gz/d;
+    /Release/d;
+    /.*json$/d;
+    /Packages/d;
+    /by-hash/d;
+    /filelists.xml.gz/d;
+    /other.xml.gz/d;
+    /primary.xml.gz/d;
+    /repomd.xml/d;
+    /repomd.xml.asc/d;
+    /repomd.xml.key/d;
+    /specs.4.8.gz/d;
+  ' | sort > "${json%.json}_files.sha2_uri" ||:
+  echo "$(wc --lines < "${json%.json}_files.sha2_uri") ${json%.json} files."
+done
 
-if [ "${count_extensions}" ] ; then
+diff --new-line-format="" --unchanged-line-format="" source_files.sha2_uri target_files.sha2_uri > diff.sha2_uri ||:
+
+declare -i count_missing="$(wc --lines < diff.sha2_uri)"
+echo "${count_missing} missing or changed."
+
+if [ "${count_extensions:-}" ] ; then
   echo
   echo
   echo "Here is the count of files sorted according to the file extension that are present in the source repository and are missing in the target repository. Please note that if there are SHA files in these repositories which will have no extension, then the entire URL will be seen in the output. The SHA files will be seen for docker repositories whose layers are named as per their SHA value. "
   echo
-  grep --extended-regexp ".*\.[a-zA-Z0-9]*$" filepaths_uri.txt | sed --expression 's/.*\(\.[a-zA-Z0-9]*\)$/\1/' filepaths_uri.txt | sort | uniq --count | sort -n
-  sed '/maven-metadata.xml/d' filepaths_uri.txt |  sed '/Packages.bz2/d' | sed '/.*gemspec.rz$/d' |  sed '/Packages.gz/d' | sed '/Release/d' | sed '/.*json$/d' | sed '/Packages/d' | sed '/by-hash/d' | sed '/filelists.xml.gz/d' | sed '/other.xml.gz/d' | sed '/primary.xml.gz/d' | sed '/repomd.xml/d' | sed '/repomd.xml.asc/d' | sed '/repomd.xml.key/d' > filepaths_nometadatafiles.txt
+  grep --extended-regexp ".*\.[a-zA-Z0-9]*$" diff.sha2_uri | sed --expression 's/.*\(\.[a-zA-Z0-9]*\)$/\1/' | sort | uniq --count | sort -n
   echo
 fi
 
 
-if [[ "${download_missingfiles,,:-}" =~ ^y(es)?$ ]] ; then
-  mkdir replication_downloads
-  cd replication_downloads
-  cat ../filepaths_nometadatafiles.txt | xargs --max-args 1 curl --silent --show-error --location --remote-name --user "${source_adminuser}:${source_password}"
-  echo "Downloading all the files that are present in Source repository and missing from the target repository to a folder '"replication_downloads"' in the current working directory"
+if [ "${download_missingfiles:-}" ] ; then
+  while read _ uri ; do
+    (
+      mkdir -p replication_downloads/"${source_repo}"
+      cd replication_downloads/"${source_repo}"
+      curl --silent --show-error --location --remote-name --user "${source_adminuser}:${source_password}" "${source_art}/${source_repo}/${uri}"
+    )
+  done < diff.sha2_uri
+  mv replication_downloads $OLDPWD/replication_downloads
+  echo "Downloaded all the files that are present in Source repository and missing from the target repository to a folder 'replication_downloads/${source_repo}' in the current working directory"
 fi
 
-exit 0
+if [ "${show_missing:-}" ] ; then
+  while read _ uri ; do
+    if grep -Fq " ${uri}" target_files.sha2_uri ; then
+      echo "${source_art}/${source_repo}/${uri##/}   !=    ${target_art}/${target_repo}/${uri##/}"
+    else
+      echo "${target_art}/${target_repo}/${uri##/} MISSING"
+    fi
+  done < diff.sha2_uri
+fi
+
+if [ "${count_missing}" = 0 ] ; then
+  echo Ok
+else
+  echo Not Ok
+  if [ "${fail_on_missing:-}" ] ; then
+    exit 1
+  fi
+fi
+
