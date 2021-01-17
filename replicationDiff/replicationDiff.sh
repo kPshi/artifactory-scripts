@@ -38,10 +38,10 @@ handle_http_status() {
       return
       ;;
     401)
-      die "Request failed with HTTP ${status_code}. Please check the provided username (-${which}_adminuser) and password (-${which}_password) for the Target Artifactory"
+      die "Request failed with HTTP ${status_code}. Please check the provided username (-${which}_adminuser) and password (-${which}_password) for the ${which} Artifactory"
       ;;
     *)
-      die "Request failed with HTTP ${status_code}. Please check the Target Artifactory URL (-${which}_art) and Target Repository (-${which}_repo) make sure its correct."
+      die "Request failed with HTTP ${status_code}. Please check the ${which} Artifactory URL (-${which}_art) and Target Repository (-${which}_repo) make sure its correct."
   esac
 }
 
